@@ -13,6 +13,8 @@ export class HTMLRenderer {
         return `<p>${this.render(node.children)}</p>`;
       case 'Bold':
         return `<strong>${this.render(node.children)}</strong>`;
+      case 'Italic':
+        return `<em>${this.render(node.children)}</em>`;
       case 'CodeInline':
         return `<code>${node.value}</code>`;
       case 'CodeBlock':

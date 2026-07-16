@@ -12,11 +12,10 @@ export class Parser {
     const ast: ASTNode[] = [];
 
     while (!this.isAtEnd()) {
-      if (this.match('NEWLINE')) continue;
-
+      if (this.match("NEWLINE")) continue;
       if (this.isCodeFence()) {
         ast.push(this.parseCodeBlock());
-      } else if (this.peek().type === 'HASH') {
+      } else if (this.peek().type === "HASH") {
         ast.push(this.parseHeading());
       } else {
         ast.push(this.parseParagraph());
@@ -28,69 +27,107 @@ export class Parser {
 
   private parseHeading(): ASTNode {
     let level = 0;
-    while (this.match('HASH')) level++;
+    while (this.match("HASH")) level++;
 
     const current = this.peek();
-    if (current.type === 'TEXT' && current.value.startsWith(' ')) {
+    if (current.type === "TEXT" && current.value.startsWith(" ")) {
       current.value = current.value.substring(1);
     }
 
-    const children = this.parseInlineUntil('NEWLINE');
-    return { type: 'Heading', level, children };
+    const children = this.parseInlineUntil(
+      () => this.peek().type === "NEWLINE",
+      () => {
+        this.advance();
+      },
+    );
+    return { type: "Heading", level, children };
   }
 
   private parseParagraph(): ASTNode {
-    const children = this.parseInlineUntil('NEWLINE');
-    return { type: 'Paragraph', children };
+    const children = this.parseInlineUntil(
+      () => this.peek().type === "NEWLINE",
+      () => {
+        this.advance();
+      },
+    );
+    return { type: "Paragraph", children };
   }
 
-  private parseInlineUntil(stopTokenType: string): ASTNode[] {
+  private parseInlineUntil(
+    stop: () => boolean,
+    consumeStop: () => void,
+  ): ASTNode[] {
     const nodes: ASTNode[] = [];
 
-    while (!this.isAtEnd() && this.peek().type !== stopTokenType) {
-      if (this.peek().type === 'STAR' && this.peekNext()?.type === 'STAR') {
+    while (!this.isAtEnd() && !stop()) {
+      let boldRule =
+        (this.peek().type === "STAR" && this.peekNext()?.type === "STAR") ||
+        (this.peek().type === "UNDERSCORE" &&
+          this.peekNext()?.type === "UNDERSCORE");
+
+      let italicRule =
+        (this.peek().type === "STAR" && this.peekNext()?.type !== "STAR") ||
+        (this.peek().type === "UNDERSCORE" &&
+          this.peekNext()?.type !== "UNDERSCORE");
+
+      if (boldRule) {
         nodes.push(this.parseBold());
-      } else if (this.peek().type === 'BACKTICK') {
+      } else if (italicRule) {
+        nodes.push(this.parseItalic());
+      } else if (this.peek().type === "BACKTICK") {
         nodes.push(this.parseCodeInline());
       } else {
         const token = this.advance();
         if (token.value.length > 0) {
-          nodes.push({ type: 'Text', value: token.value });
+          nodes.push({ type: "Text", value: token.value });
         }
       }
     }
 
-    if (this.peek().type === stopTokenType) this.advance();
+    if (!this.isAtEnd() && stop()) consumeStop();
     return nodes;
   }
 
   private parseBold(): ASTNode {
-    this.advance(); // consume *
-    this.advance(); // consume *
+    const delimiter = this.peek().type;
+    this.advance(); // consume opening delimiter
+    this.advance();
 
-    const children: ASTNode[] = [];
-    while (!this.isAtEnd()) {
-      if (this.peek().type === 'STAR' && this.peekNext()?.type === 'STAR') {
+    const children = this.parseInlineUntil(
+      () =>
+        this.peek().type === delimiter && this.peekNext()?.type === delimiter,
+      () => {
         this.advance();
         this.advance();
-        break;
-      }
-      const token = this.advance();
-      children.push({ type: 'Text', value: token.value });
-    }
+      },
+    );
 
-    return { type: 'Bold', children };
+    return { type: "Bold", children };
+  }
+
+  private parseItalic(): ASTNode {
+    const delimiter = this.peek().type;
+    this.advance(); // consume opening delimiter
+
+    const children = this.parseInlineUntil(
+      () => this.peek().type === delimiter,
+      () => {
+        this.advance();
+      },
+    );
+
+    return { type: "Italic", children };
   }
 
   private parseCodeInline(): ASTNode {
     this.advance(); // consume `
-    let value = '';
-    while (!this.isAtEnd() && this.peek().type !== 'BACKTICK') {
+    let value = "";
+    while (!this.isAtEnd() && this.peek().type !== "BACKTICK") {
       value += this.advance().value;
     }
-    if (this.peek().type === 'BACKTICK') this.advance();
+    if (this.peek().type === "BACKTICK") this.advance();
 
-    return { type: 'CodeInline', value };
+    return { type: "CodeInline", value };
   }
 
   private parseCodeBlock(): ASTNode {
@@ -98,13 +135,13 @@ export class Parser {
     this.advance(); // consume `
     this.advance(); // consume `
 
-    let lang = '';
-    while (!this.isAtEnd() && this.peek().type !== 'NEWLINE') {
+    let lang = "";
+    while (!this.isAtEnd() && this.peek().type !== "NEWLINE") {
       lang += this.advance().value;
     }
-    if (this.peek().type === 'NEWLINE') this.advance();
+    if (this.peek().type === "NEWLINE") this.advance();
 
-    let value = '';
+    let value = "";
     while (!this.isAtEnd() && !this.isCodeFence()) {
       value += this.advance().value;
     }
@@ -114,16 +151,20 @@ export class Parser {
       this.advance(); // consume `
       this.advance(); // consume `
     }
-    if (this.peek().type === 'NEWLINE') this.advance();
+    if (this.peek().type === "NEWLINE") this.advance();
 
-    return { type: 'CodeBlock', lang: lang.trim(), value: value.replace(/\n$/, '') };
+    return {
+      type: "CodeBlock",
+      lang: lang.trim(),
+      value: value.replace(/\n$/, ""),
+    };
   }
 
   private isCodeFence(): boolean {
     return (
-      this.peek().type === 'BACKTICK' &&
-      this.peekNext()?.type === 'BACKTICK' &&
-      this.peekNext(2)?.type === 'BACKTICK'
+      this.peek().type === "BACKTICK" &&
+      this.peekNext()?.type === "BACKTICK" &&
+      this.peekNext(2)?.type === "BACKTICK"
     );
   }
 
@@ -150,6 +191,6 @@ export class Parser {
   }
 
   private isAtEnd(): boolean {
-    return this.peek().type === 'EOF';
+    return this.peek().type === "EOF";
   }
 }

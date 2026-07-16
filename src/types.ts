@@ -1,6 +1,7 @@
 export type TokenType =
   | 'HASH'
   | 'STAR'
+  | 'UNDERSCORE'
   | 'BACKTICK'
   | 'TEXT'
   | 'NEWLINE'
@@ -9,6 +10,7 @@ export type TokenType =
 export const SYNTAX_TOKENS = {
   HASH: '#',
   STAR: '*',
+  UNDERSCORE: '_',
   BACKTICK: '`',
   NEWLINE: '\n',
   EOF: '',
@@ -25,5 +27,6 @@ export type ASTNode =
   | { type: 'Paragraph'; children: ASTNode[] }
   | { type: 'Text'; value: string }
   | { type: 'Bold'; children: ASTNode[] }
+  | { type: 'Italic'; children: ASTNode[] }
   | { type: 'CodeInline'; value: string }
   | { type: 'CodeBlock'; lang: string; value: string };
