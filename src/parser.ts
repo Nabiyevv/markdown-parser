@@ -1,0 +1,155 @@
+import type { ASTNode, Token } from "./types";
+
+export class Parser {
+  private tokens: Token[];
+  private pos: number = 0;
+
+  constructor(tokens: Token[]) {
+    this.tokens = tokens;
+  }
+
+  public parse(): ASTNode[] {
+    const ast: ASTNode[] = [];
+
+    while (!this.isAtEnd()) {
+      if (this.match('NEWLINE')) continue;
+
+      if (this.isCodeFence()) {
+        ast.push(this.parseCodeBlock());
+      } else if (this.peek().type === 'HASH') {
+        ast.push(this.parseHeading());
+      } else {
+        ast.push(this.parseParagraph());
+      }
+    }
+
+    return ast;
+  }
+
+  private parseHeading(): ASTNode {
+    let level = 0;
+    while (this.match('HASH')) level++;
+
+    const current = this.peek();
+    if (current.type === 'TEXT' && current.value.startsWith(' ')) {
+      current.value = current.value.substring(1);
+    }
+
+    const children = this.parseInlineUntil('NEWLINE');
+    return { type: 'Heading', level, children };
+  }
+
+  private parseParagraph(): ASTNode {
+    const children = this.parseInlineUntil('NEWLINE');
+    return { type: 'Paragraph', children };
+  }
+
+  private parseInlineUntil(stopTokenType: string): ASTNode[] {
+    const nodes: ASTNode[] = [];
+
+    while (!this.isAtEnd() && this.peek().type !== stopTokenType) {
+      if (this.peek().type === 'STAR' && this.peekNext()?.type === 'STAR') {
+        nodes.push(this.parseBold());
+      } else if (this.peek().type === 'BACKTICK') {
+        nodes.push(this.parseCodeInline());
+      } else {
+        const token = this.advance();
+        if (token.value.length > 0) {
+          nodes.push({ type: 'Text', value: token.value });
+        }
+      }
+    }
+
+    if (this.peek().type === stopTokenType) this.advance();
+    return nodes;
+  }
+
+  private parseBold(): ASTNode {
+    this.advance(); // consume *
+    this.advance(); // consume *
+
+    const children: ASTNode[] = [];
+    while (!this.isAtEnd()) {
+      if (this.peek().type === 'STAR' && this.peekNext()?.type === 'STAR') {
+        this.advance();
+        this.advance();
+        break;
+      }
+      const token = this.advance();
+      children.push({ type: 'Text', value: token.value });
+    }
+
+    return { type: 'Bold', children };
+  }
+
+  private parseCodeInline(): ASTNode {
+    this.advance(); // consume `
+    let value = '';
+    while (!this.isAtEnd() && this.peek().type !== 'BACKTICK') {
+      value += this.advance().value;
+    }
+    if (this.peek().type === 'BACKTICK') this.advance();
+
+    return { type: 'CodeInline', value };
+  }
+
+  private parseCodeBlock(): ASTNode {
+    this.advance(); // consume `
+    this.advance(); // consume `
+    this.advance(); // consume `
+
+    let lang = '';
+    while (!this.isAtEnd() && this.peek().type !== 'NEWLINE') {
+      lang += this.advance().value;
+    }
+    if (this.peek().type === 'NEWLINE') this.advance();
+
+    let value = '';
+    while (!this.isAtEnd() && !this.isCodeFence()) {
+      value += this.advance().value;
+    }
+
+    if (this.isCodeFence()) {
+      this.advance(); // consume `
+      this.advance(); // consume `
+      this.advance(); // consume `
+    }
+    if (this.peek().type === 'NEWLINE') this.advance();
+
+    return { type: 'CodeBlock', lang: lang.trim(), value: value.replace(/\n$/, '') };
+  }
+
+  private isCodeFence(): boolean {
+    return (
+      this.peek().type === 'BACKTICK' &&
+      this.peekNext()?.type === 'BACKTICK' &&
+      this.peekNext(2)?.type === 'BACKTICK'
+    );
+  }
+
+  private peek(): Token {
+    return this.tokens[this.pos]!;
+  }
+
+  private peekNext(offset = 1): Token | undefined {
+    return this.tokens[this.pos + offset];
+  }
+
+  private advance(): Token {
+    const current = this.tokens[this.pos]!;
+    if (!this.isAtEnd()) this.pos++;
+    return current;
+  }
+
+  private match(type: string): boolean {
+    if (this.peek().type === type) {
+      this.advance();
+      return true;
+    }
+    return false;
+  }
+
+  private isAtEnd(): boolean {
+    return this.peek().type === 'EOF';
+  }
+}
