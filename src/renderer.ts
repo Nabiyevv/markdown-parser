@@ -8,7 +8,9 @@ export class HTMLRenderer {
   private renderNode(node: ASTNode): string {
     switch (node.type) {
       case 'Heading':
-        return `<h${node.level}>${this.render(node.children)}</h${node.level}>`;
+        return `<h${node.level} style="margin: .67em 0;
+          padding-bottom: .3em;
+          border-bottom: 1px solid #d1d9e0b3;">${this.render(node.children)}</h${node.level}>`;
       case 'Paragraph':
         return `<p>${this.render(node.children)}</p>`;
       case 'Bold':
@@ -18,7 +20,8 @@ export class HTMLRenderer {
       case 'Italic':
         return `<em>${this.render(node.children)}</em>`;
       case 'Divider':
-        return `<hr />`;
+        return `<hr style="border: none;
+          border-top: 2px solid #d1d9e0b3;" />`;
       case 'Link':
         return `<a href="${node.href}" ${node.title ? `title="${node.title}"` : ''}>${this.render(node.children)}</a>`;
       case 'CodeInline':
