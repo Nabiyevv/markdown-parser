@@ -70,10 +70,15 @@ export class Parser {
         (this.peek().type === "UNDERSCORE" &&
           this.peekNext()?.type !== "UNDERSCORE");
 
+      let strikethroughRule =
+        (this.peek().type === "TILDE" && this.peekNext()?.type === "TILDE");
+
       if (boldRule) {
         nodes.push(this.parseBold());
       } else if (italicRule) {
         nodes.push(this.parseItalic());
+      } else if (strikethroughRule) {
+        nodes.push(this.parseStrikethrough());
       } else if (this.peek().type === "BACKTICK") {
         nodes.push(this.parseCodeInline());
       } else {
@@ -103,6 +108,23 @@ export class Parser {
     );
 
     return { type: "Bold", children };
+  }
+
+  private parseStrikethrough(): ASTNode {
+    const delimiter = this.peek().type;
+    this.advance(); // consume opening delimiter
+    this.advance();
+
+    const children = this.parseInlineUntil(
+      () =>
+        this.peek().type === delimiter && this.peekNext()?.type === delimiter,
+      () => {
+        this.advance();
+        this.advance();
+      },
+    );
+
+    return { type: "Strikethrough", children };
   }
 
   private parseItalic(): ASTNode {
