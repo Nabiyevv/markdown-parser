@@ -24,6 +24,8 @@ export class HTMLRenderer {
           border-top: 2px solid #d1d9e0b3;" />`;
       case 'Link':
         return `<a href="${node.href}" ${node.title ? `title="${node.title}"` : ''}>${this.render(node.children)}</a>`;
+      case 'Image':
+        return `<img src="${node.src}" alt="${node.alt ?? ''}" ${node.title ? `title="${node.title}"` : ''} />`;
       case 'CodeInline':
         return `<code>${node.value}</code>`;
       case 'CodeBlock':

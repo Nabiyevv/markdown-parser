@@ -98,6 +98,8 @@ export class Parser {
         nodes.push(this.parseCodeInline());
       } else if (this.peek().type === "BRACKET_OPEN") {
         nodes.push(this.parseLink());
+      } else if (this.peek().value === '!' && this.peekNext()?.type === "BRACKET_OPEN") {
+        nodes.push(this.parseImage());
       } else {
         const token = this.advance();
         if (token.value && token.value.length > 0) {
@@ -110,10 +112,8 @@ export class Parser {
     return nodes;
   }
 
-  private parseLink(): ASTNode {
-    this.advance(); // consume '['
-  
-    // Parse link label (allows nested formatting like [**bold link**](url))
+  private parseLinkComponents(): { children: ASTNode[]; href: string; title?: string } {
+    // Parse bracket content (allows nested inline formatting)
     const children = this.parseInlineUntil(
       () => this.peek().type === "BRACKET_CLOSE" || this.isAtEndOfLine(),
       () => {
@@ -144,14 +144,33 @@ export class Parser {
       title = parsed.title;
     }
   
-    const node: ASTNode = {
+    return { children, href, title };
+  }
+  
+  private parseLink(): ASTNode {
+    this.advance(); // consume '['
+    const { children, href, title } = this.parseLinkComponents();
+  
+    return {
       type: "Link",
       children,
       href,
       title: title ?? undefined,
     };
+  }
   
-    return node;
+  private parseImage(): ASTNode {
+    this.advance(); // consume '!'
+    this.advance(); // consume '['
+    
+    const { children, href, title } = this.parseLinkComponents();
+    let alt = children?.[0]?.value ?? '';
+    return {
+      type: "Image",
+      alt,
+      title: title ?? undefined,
+      src: href,
+    };
   }
   
   private parseHrefAndTitle(raw: string): { href: string; title?: string } {
@@ -170,7 +189,7 @@ export class Parser {
     // Fallback if no valid title quote pattern was found
     return { href: raw };
   }
-  
+
   private parseBold(): ASTNode {
     const delimiter = this.peek().type;
     this.advance(); // consume opening delimiter

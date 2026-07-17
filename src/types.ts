@@ -43,5 +43,6 @@ export type ASTNode =
   | { type: 'Strikethrough'; children: ASTNode[] }
   | { type: 'Italic'; children: ASTNode[] }
   | { type: 'Link'; children: ASTNode[]; href: string; title: string | undefined }
+  | { type: 'Image'; src: string; alt: string | undefined; title: string | undefined }
   | { type: 'CodeInline'; value: string }
   | { type: 'CodeBlock'; lang: string; value: string };
