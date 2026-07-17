@@ -1,3 +1,4 @@
+import { exit } from "process";
 import type { ASTNode, Token } from "./types";
 
 export class Parser {
@@ -15,6 +16,8 @@ export class Parser {
       if (this.match("NEWLINE")) continue;
       if (this.isCodeFence()) {
         ast.push(this.parseCodeBlock());
+      } else if (this.isDividerFence()) {
+        ast.push(this.parseDivider());
       } else if (this.peek().type === "HASH") {
         ast.push(this.parseHeading());
       } else {
@@ -51,6 +54,18 @@ export class Parser {
       },
     );
     return { type: "Paragraph", children };
+  }
+
+  private parseDivider(): ASTNode {
+    const fenceType = this.peek().type;
+  
+    this.consumeAll(fenceType);
+
+    if (this.peek().type === "NEWLINE") {
+      this.advance();
+    }
+  
+    return { type: "Divider" };
   }
 
   private parseInlineUntil(
@@ -190,6 +205,28 @@ export class Parser {
     );
   }
 
+  private isDividerFence(): boolean {
+    let offset = 0;
+    const firstType = this.peekNext(offset)?.type;
+  
+    // Horizontal rules are usually 3 or more MINUS ('-'), STAR ('*'), or UNDERSCORE ('_') (for thin lines)
+    if (firstType !== "MINUS" && firstType !== "STAR" && firstType !== "UNDERSCORE") {
+      return false;
+    }
+  
+    let count = 0;
+    while (this.peekNext(offset)?.type === firstType) {
+      count++;
+      offset++;
+    }
+  
+    // Check if we hit 3+ matching characters followed immediately by a newline or EOF
+    const nextType = this.peekNext(offset)?.type;
+    const isEndOfLine = nextType === "NEWLINE" || nextType === "EOF";
+  
+    return count >= 3 && isEndOfLine;
+  }
+
   private peek(): Token {
     return this.tokens[this.pos]!;
   }
@@ -212,7 +249,20 @@ export class Parser {
     return false;
   }
 
+  private consumeAll(type: string): void {
+    while (this.match(type));
+  }
+
   private isAtEnd(): boolean {
     return this.peek().type === "EOF";
   }
+
+  private isAtEndOfLine(): boolean {
+    return this.peek().type === "EOF" || this.peek().type === "NEWLINE";
+  }
+
+  private isAtText(): boolean {
+    return this.peek().type === "TEXT";
+  }
+
 }

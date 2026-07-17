@@ -20,6 +20,9 @@ export class Lexer {
       } else if (char === SYNTAX_TOKENS.STAR) {
         tokens.push({ type: "STAR", value: SYNTAX_TOKENS.STAR });
         this.pos++;
+      } else if (char === SYNTAX_TOKENS.MINUS) {
+        tokens.push({ type: "MINUS", value: SYNTAX_TOKENS.MINUS });
+        this.pos++;
       } else if (char === SYNTAX_TOKENS.UNDERSCORE) {
         tokens.push({ type: "UNDERSCORE", value: SYNTAX_TOKENS.UNDERSCORE });
         this.pos++;
@@ -51,6 +54,7 @@ export class Lexer {
         char === SYNTAX_TOKENS.UNDERSCORE ||
         char === SYNTAX_TOKENS.BACKTICK ||
         char === SYNTAX_TOKENS.TILDE ||
+        char === SYNTAX_TOKENS.MINUS ||
         char === SYNTAX_TOKENS.NEWLINE
       ) {
         break;

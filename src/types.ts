@@ -4,6 +4,7 @@ export type TokenType =
   | 'UNDERSCORE'
   | 'BACKTICK'
   | 'TILDE'
+  | 'MINUS'
   | 'TEXT'
   | 'NEWLINE'
   | 'EOF';
@@ -14,6 +15,7 @@ export const SYNTAX_TOKENS = {
   UNDERSCORE: '_',
   BACKTICK: '`',
   TILDE: '~',
+  MINUS: '-',
   NEWLINE: '\n',
   EOF: '',
 } as const;
@@ -28,6 +30,7 @@ export type ASTNode =
   | { type: 'Heading'; level: number; children: ASTNode[] }
   | { type: 'Paragraph'; children: ASTNode[] }
   | { type: 'Text'; value: string }
+  | { type: 'Divider' }
   | { type: 'Bold'; children: ASTNode[] }
   | { type: 'Strikethrough'; children: ASTNode[] }
   | { type: 'Italic'; children: ASTNode[] }

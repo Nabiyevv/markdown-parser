@@ -17,6 +17,8 @@ export class HTMLRenderer {
         return `<s>${this.render(node.children)}</s>`;
       case 'Italic':
         return `<em>${this.render(node.children)}</em>`;
+      case 'Divider':
+        return `<hr />`;
       case 'CodeInline':
         return `<code>${node.value}</code>`;
       case 'CodeBlock':
