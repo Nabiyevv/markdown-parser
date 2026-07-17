@@ -96,9 +96,11 @@ export class Parser {
         nodes.push(this.parseStrikethrough());
       } else if (this.peek().type === "BACKTICK") {
         nodes.push(this.parseCodeInline());
+      } else if (this.peek().type === "BRACKET_OPEN") {
+        nodes.push(this.parseLink());
       } else {
         const token = this.advance();
-        if (token.value.length > 0) {
+        if (token.value && token.value.length > 0) {
           nodes.push({ type: "Text", value: token.value });
         }
       }
@@ -108,6 +110,67 @@ export class Parser {
     return nodes;
   }
 
+  private parseLink(): ASTNode {
+    this.advance(); // consume '['
+  
+    // Parse link label (allows nested formatting like [**bold link**](url))
+    const children = this.parseInlineUntil(
+      () => this.peek().type === "BRACKET_CLOSE" || this.isAtEndOfLine(),
+      () => {
+        if (this.peek().type === "BRACKET_CLOSE") this.advance();
+      }
+    );
+  
+    let href = "";
+    let title: string | undefined = undefined;
+  
+    // Expect '(' right after ']'
+    if (this.peek().type === "PAREN_OPEN") {
+      this.advance(); // consume '('
+  
+      // Collect full raw string inside the parenthesis until ')'
+      let rawDestination = "";
+      while (!this.isAtEndOfLine() && this.peek().type !== "PAREN_CLOSE") {
+        rawDestination += this.advance().value;
+      }
+  
+      if (this.peek().type === "PAREN_CLOSE") {
+        this.advance(); // consume ')'
+      }
+  
+      // Parse the collected inside content into href and optional title
+      const parsed = this.parseHrefAndTitle(rawDestination.trim());
+      href = parsed.href;
+      title = parsed.title;
+    }
+  
+    const node: ASTNode = {
+      type: "Link",
+      children,
+      href,
+      title: title ?? undefined,
+    };
+  
+    return node;
+  }
+  
+  private parseHrefAndTitle(raw: string): { href: string; title?: string } {
+    if (!raw) return { href: "" };
+  
+    // Match: <url> follow by "title" or 'title'
+    const titleMatch = raw.match(/^(\S+)\s+(?:"([^"]*)"|'([^']*)')$/);
+  
+    if (titleMatch) {
+      return {
+        href: titleMatch[1]!,
+        title: titleMatch[2] ?? titleMatch[3],
+      };
+    }
+  
+    // Fallback if no valid title quote pattern was found
+    return { href: raw };
+  }
+  
   private parseBold(): ASTNode {
     const delimiter = this.peek().type;
     this.advance(); // consume opening delimiter
@@ -269,6 +332,14 @@ export class Parser {
 
   private isAtText(): boolean {
     return this.peek().type === "TEXT";
+  }
+
+  private getLine(): string {
+    let line = "";
+    while (!this.isAtEndOfLine()) {
+      line += this.advance().value;
+    }
+    return line;
   }
 
 }

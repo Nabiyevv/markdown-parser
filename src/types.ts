@@ -5,6 +5,10 @@ export type TokenType =
   | 'BACKTICK'
   | 'TILDE'
   | 'MINUS'
+  | 'BRACKET_OPEN'
+  | 'BRACKET_CLOSE'
+  | 'PAREN_OPEN'
+  | 'PAREN_CLOSE'
   | 'TEXT'
   | 'NEWLINE'
   | 'EOF';
@@ -16,6 +20,10 @@ export const SYNTAX_TOKENS = {
   BACKTICK: '`',
   TILDE: '~',
   MINUS: '-',
+  BRACKET_OPEN: '[',
+  BRACKET_CLOSE: ']',
+  PAREN_OPEN: '(',
+  PAREN_CLOSE: ')',
   NEWLINE: '\n',
   EOF: '',
 } as const;
@@ -34,5 +42,6 @@ export type ASTNode =
   | { type: 'Bold'; children: ASTNode[] }
   | { type: 'Strikethrough'; children: ASTNode[] }
   | { type: 'Italic'; children: ASTNode[] }
+  | { type: 'Link'; children: ASTNode[]; href: string; title: string | undefined }
   | { type: 'CodeInline'; value: string }
   | { type: 'CodeBlock'; lang: string; value: string };

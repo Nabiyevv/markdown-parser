@@ -32,6 +32,24 @@ export class Lexer {
       } else if (char === SYNTAX_TOKENS.TILDE) {
         tokens.push({ type: "TILDE", value: SYNTAX_TOKENS.TILDE });
         this.pos++;
+      } else if (char === SYNTAX_TOKENS.BRACKET_OPEN) {
+        tokens.push({
+          type: "BRACKET_OPEN",
+          value: SYNTAX_TOKENS.BRACKET_OPEN,
+        });
+        this.pos++;
+      } else if (char === SYNTAX_TOKENS.BRACKET_CLOSE) {
+        tokens.push({
+          type: "BRACKET_CLOSE",
+          value: SYNTAX_TOKENS.BRACKET_CLOSE,
+        });
+        this.pos++;
+      } else if (char === SYNTAX_TOKENS.PAREN_OPEN) {
+        tokens.push({ type: "PAREN_OPEN", value: SYNTAX_TOKENS.PAREN_OPEN });
+        this.pos++;
+      } else if (char === SYNTAX_TOKENS.PAREN_CLOSE) {
+        tokens.push({ type: "PAREN_CLOSE", value: SYNTAX_TOKENS.PAREN_CLOSE });
+        this.pos++;
       } else if (char === SYNTAX_TOKENS.NEWLINE) {
         tokens.push({ type: "NEWLINE", value: SYNTAX_TOKENS.NEWLINE });
         this.pos++;
@@ -55,6 +73,10 @@ export class Lexer {
         char === SYNTAX_TOKENS.BACKTICK ||
         char === SYNTAX_TOKENS.TILDE ||
         char === SYNTAX_TOKENS.MINUS ||
+        char === SYNTAX_TOKENS.BRACKET_OPEN ||
+        char === SYNTAX_TOKENS.BRACKET_CLOSE ||
+        char === SYNTAX_TOKENS.PAREN_OPEN ||
+        char === SYNTAX_TOKENS.PAREN_CLOSE ||
         char === SYNTAX_TOKENS.NEWLINE
       ) {
         break;

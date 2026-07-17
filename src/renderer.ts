@@ -19,6 +19,8 @@ export class HTMLRenderer {
         return `<em>${this.render(node.children)}</em>`;
       case 'Divider':
         return `<hr />`;
+      case 'Link':
+        return `<a href="${node.href}" ${node.title ? `title="${node.title}"` : ''}>${this.render(node.children)}</a>`;
       case 'CodeInline':
         return `<code>${node.value}</code>`;
       case 'CodeBlock':
