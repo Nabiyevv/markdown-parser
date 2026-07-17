@@ -115,10 +115,13 @@ export class Parser {
 
     const children = this.parseInlineUntil(
       () =>
-        this.peek().type === delimiter && this.peekNext()?.type === delimiter,
+        (this.peek().type === delimiter && this.peekNext()?.type === delimiter) ||
+        this.isAtEndOfLine(),
       () => {
-        this.advance();
-        this.advance();
+        if (this.peek().type === delimiter) {
+          this.advance();
+          this.advance();
+        }
       },
     );
 
@@ -132,10 +135,13 @@ export class Parser {
 
     const children = this.parseInlineUntil(
       () =>
-        this.peek().type === delimiter && this.peekNext()?.type === delimiter,
+        (this.peek().type === delimiter && this.peekNext()?.type === delimiter) ||
+        this.isAtEndOfLine(),
       () => {
-        this.advance();
-        this.advance();
+        if (this.peek().type === delimiter) {
+          this.advance();
+          this.advance();
+        }
       },
     );
 
@@ -147,10 +153,10 @@ export class Parser {
     this.advance(); // consume opening delimiter
 
     const children = this.parseInlineUntil(
-      () => this.peek().type === delimiter,
+      () => this.peek().type === delimiter || this.isAtEndOfLine(),
       () => {
-        this.advance();
-      },
+        if (this.peek().type === delimiter) this.advance();
+      }
     );
 
     return { type: "Italic", children };
